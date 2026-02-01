@@ -1,38 +1,27 @@
 import { useState } from "react";
-
+import type { RegisterUser } from "../types/user";
 
 const RegistrationForm = () => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<RegisterUser>({
     name: "",
     email: "",
     password: "",
-    cv: null as File | null,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, files } = e.target;
+
     setFormData((prev) => ({
       ...prev,
       [name]: files ? files[0] : value,
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // MOCK API CALL (backend not ready yet)
-    console.log("Submitting user:", formData);
-
-    /*
-    Later (Day 3+):
-    const payload = new FormData();
-    payload.append("name", formData.name);
-    payload.append("email", formData.email);
-    payload.append("password", formData.password);
-    if (formData.cv) payload.append("cv", formData.cv);
-
-    await api.post("/register", payload);
-    */
+    // MOCK submit
+    console.log("User Registration Payload:", formData);
   };
 
   return (
