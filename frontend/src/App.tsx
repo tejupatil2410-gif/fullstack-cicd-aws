@@ -5,9 +5,9 @@ function App() {
     <div>
       <h1>User Registration - Final Verification</h1>
       <RegistrationForm />
-      <h1 style={{ color: "green" }}>
+      <h4 style={{ color: "green" }}>
   🚀 Frontend Auto-Deployed via GitHub Actions
-      </h1>
+      </h4>
 
     </div>
 
