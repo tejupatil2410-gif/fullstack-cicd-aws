@@ -13,6 +13,15 @@ async function startServer() {
   });
 
   const PORT = process.env.PORT || 3000;
+  app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'backend-api',
+    version: 'v2',
+    deployedAt: new Date().toISOString()
+  });
+});
+
   app.listen(PORT, () => {
     console.log(`🚀 Backend running on port ${PORT}`);
   });
