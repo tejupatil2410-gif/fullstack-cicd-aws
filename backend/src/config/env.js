@@ -6,6 +6,9 @@ async function loadEnv() {
   process.env.DB_PASSWORD = await getSSMParameter("/dev/app/db/password");
   process.env.JWT_SECRET = await getSSMParameter("/dev/app/jwt/secret");
 
+  // ✅ FIX: Load AWS_REGION from SSM
+  process.env.AWS_REGION = await getSSMParameter("/dev/app/aws/region");
+
   console.log("✅ Secrets loaded from AWS SSM");
 }
 
