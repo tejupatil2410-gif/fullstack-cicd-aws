@@ -1,19 +1,18 @@
 const express = require("express");
 const cors = require("cors");
+const multer = require("multer");
+const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const { loadEnv } = require("./config/env");
 
 async function startServer() {
-  // 🔐 Load secrets FIRST (SSM, env, etc.)
+  // 🔐 Load secrets FIRST (SSM / env vars)
   await loadEnv();
 
   const app = express();
 
-  /**
-   * ✅ Production-ready CORS configuration
-   * Allows:
-   *  - Local development frontend
-   *  - S3 static website frontend
-   */
+  // ======================
+  // ✅ CORS CONFIG
+  // ======================
   const allowedOrigins = [
     "http://localhost:5173",
     "http://fullstack-cicd-frontend-prod.s3-website-us-east-1.amazonaws.com",
@@ -22,58 +21,38 @@ async function startServer() {
   app.use(
     cors({
       origin: function (origin, callback) {
-        // Allow server-to-server calls (curl, Postman, health checks)
         if (!origin) return callback(null, true);
-
         if (allowedOrigins.includes(origin)) {
-          callback(null, true);
-        } else {
-          callback(new Error("Not allowed by CORS"));
+          return callback(null, true);
         }
+        return callback(new Error("Not allowed by CORS"));
       },
       credentials: true,
     })
   );
 
-  // ✅ Parse JSON after CORS
+  // ======================
+  // ✅ BODY PARSER
+  // ======================
   app.use(express.json());
 
-  const multer = require("multer");
+  // ======================
+  // ✅ MULTER (FILE UPLOAD)
+  // ======================
+  const upload = multer({
+    storage: multer.memoryStorage(),
+  });
 
-// store file in memory (later you can upload to S3)
-const upload = multer({ storage: multer.memoryStorage() });
+  // ======================
+  // ✅ S3 CLIENT (⬅️ THIS IS THE PART YOU ASKED ABOUT)
+  // ======================
+  const s3 = new S3Client({
+    region: process.env.AWS_REGION,
+  });
 
-// ✅ User registration endpoint
-app.post("/register", upload.single("cv"), async (req, res) => {
-  try {
-    const { name, email, password } = req.body;
-    const cvFile = req.file;
-
-    // Basic validation
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: "Missing required fields" });
-    }
-
-    console.log("New user registration:");
-    console.log({ name, email });
-    console.log("CV file:", cvFile?.originalname);
-
-    // 🔜 Later:
-    // - upload CV to S3
-    // - hash password
-    // - insert into PostgreSQL
-
-    return res.status(201).json({
-      message: "User registered successfully",
-    });
-  } catch (err) {
-    console.error("Registration error:", err);
-    return res.status(500).json({ message: "Internal server error" });
-  }
-});
-
-
-  // 🔍 Health check (used by curl / ALB / monitoring)
+  // ======================
+  // 🔍 HEALTH CHECKS
+  // ======================
   app.get("/health", (req, res) => {
     res.json({ status: "OK" });
   });
@@ -87,7 +66,48 @@ app.post("/register", upload.single("cv"), async (req, res) => {
     });
   });
 
-  // 🚀 Start server
+  // ======================
+  // ✅ REGISTER API (UPLOAD CV TO S3)
+  // ======================
+  app.post("/register", upload.single("cv"), async (req, res) => {
+    try {
+      const { name, email, password } = req.body;
+      const file = req.file;
+
+      if (!name || !email || !password || !file) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      // 🔹 Unique file key
+      const fileKey = `cvs/${Date.now()}-${file.originalname}`;
+
+      // 🔹 Upload to S3
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: "user-cv-uploads-tejaswi",
+          Key: fileKey,
+          Body: file.buffer,
+          ContentType: file.mimetype,
+        })
+      );
+
+      const fileUrl = `https://user-cv-uploads-tejaswi.s3.amazonaws.com/${fileKey}`;
+
+      console.log("✅ CV uploaded to S3:", fileUrl);
+
+      return res.status(201).json({
+        message: "User registered successfully",
+        cvUrl: fileUrl,
+      });
+    } catch (err) {
+      console.error("❌ Registration error:", err);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // ======================
+  // 🚀 START SERVER
+  // ======================
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
     console.log(`🚀 Backend running on port ${PORT}`);
