@@ -1,4 +1,5 @@
 const express = require("express");
+const cors = require("cors");
 const { loadEnv } = require("./config/env");
 
 async function startServer() {
@@ -6,22 +7,34 @@ async function startServer() {
   await loadEnv();
 
   const app = express();
+
+  // ✅ CORS MUST COME FIRST
+  app.use(cors({
+    origin: "http://localhost:5173",
+    credentials: true
+  }));
+
+  // ✅ Handle preflight requests explicitly (important)
+  app.options("*", cors());
+
+  // ✅ Body parser AFTER CORS
   app.use(express.json());
 
+  // 🔍 Health check
   app.get("/health", (req, res) => {
     res.json({ status: "OK" });
   });
 
-  const PORT = process.env.PORT || 3000;
-  app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    service: 'backend-api',
-    version: 'v2',
-    deployedAt: new Date().toISOString()
+  app.get("/api/health", (req, res) => {
+    res.json({
+      status: "ok",
+      service: "backend-api",
+      version: "v2",
+      deployedAt: new Date().toISOString()
+    });
   });
-});
 
+  const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
     console.log(`🚀 Backend running on port ${PORT}`);
   });

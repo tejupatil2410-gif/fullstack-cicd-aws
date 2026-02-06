@@ -1,4 +1,5 @@
 import { useState } from "react";
+import api from "../api/axios";
 import type { RegisterUser } from "../types/user";
 
 const RegistrationForm = () => {
@@ -17,19 +18,65 @@ const RegistrationForm = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // MOCK submit
     console.log("User Registration Payload:", formData);
+
+    // 🔹 Create multipart/form-data
+    const data = new FormData();
+    data.append("name", formData.name);
+    data.append("email", formData.email);
+    data.append("password", formData.password);
+
+    if (formData.cv) {
+      data.append("cv", formData.cv);
+    }
+
+    try {
+      console.log("🚀 Sending API request...");
+
+      const response = await api.post("/register", data);
+
+      console.log("✅ Server response:", response.data);
+      alert("User registered successfully!");
+    } catch (error) {
+      console.error("❌ Registration failed:", error);
+      alert("Registration failed. Check console.");
+    }
   };
 
   return (
     <form onSubmit={handleSubmit}>
-      <input name="name" placeholder="Name" required onChange={handleChange} />
-      <input name="email" type="email" placeholder="Email" required onChange={handleChange} />
-      <input name="password" type="password" placeholder="Password" required onChange={handleChange} />
-      <input name="cv" type="file" onChange={handleChange} />
+      <input
+        name="name"
+        placeholder="Name"
+        required
+        onChange={handleChange}
+      />
+
+      <input
+        name="email"
+        type="email"
+        placeholder="Email"
+        required
+        onChange={handleChange}
+      />
+
+      <input
+        name="password"
+        type="password"
+        placeholder="Password"
+        required
+        onChange={handleChange}
+      />
+
+      <input
+        name="cv"
+        type="file"
+        onChange={handleChange}
+      />
+
       <button type="submit">Register</button>
     </form>
   );
