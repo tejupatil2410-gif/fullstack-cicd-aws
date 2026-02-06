@@ -8,14 +8,13 @@ async function startServer() {
 
   const app = express();
 
-  // ✅ CORS MUST COME FIRST
-  app.use(cors({
-    origin: "http://localhost:5173",
-    credentials: true
-  }));
-
-  // ✅ Handle preflight requests explicitly (important)
-  app.options("*", cors());
+  // ✅ Enable CORS (this is enough)
+  app.use(
+    cors({
+      origin: "http://localhost:5173",
+      credentials: true,
+    })
+  );
 
   // ✅ Body parser AFTER CORS
   app.use(express.json());
@@ -30,7 +29,7 @@ async function startServer() {
       status: "ok",
       service: "backend-api",
       version: "v2",
-      deployedAt: new Date().toISOString()
+      deployedAt: new Date().toISOString(),
     });
   });
 
