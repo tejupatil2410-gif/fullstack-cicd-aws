@@ -39,7 +39,7 @@ async function startServer() {
       credentials: true,
     })
   );
-
+  app.options("/api/*", cors());
   
   // ======================
   // ✅ BODY PARSER
