@@ -69,7 +69,7 @@ async function startServer() {
   // ======================
   // ✅ REGISTER API (UPLOAD CV TO S3)
   // ======================
-  app.post("/register", upload.single("cv"), async (req, res) => {
+  app.post("/api/register", upload.single("cv"), async (req, res) => {
     try {
       const { name, email, password } = req.body;
       const file = req.file;
