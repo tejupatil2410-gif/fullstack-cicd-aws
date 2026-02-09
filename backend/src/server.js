@@ -14,10 +14,10 @@ async function startServer() {
   // ✅ CORS CONFIG
   // ======================
   const allowedOrigins = [
-    "http://localhost:5173",
-    "http://localhost:4173",
-    "http://fullstack-cicd-frontend-prod.s3-website-us-east-1.amazonaws.com",
-  ];
+  "http://localhost:5173",
+  "http://localhost:4173",
+  "http://fullstack-cicd-frontend-prod.s3-website-us-east-1.amazonaws.com",
+];
 
   app.use(
     cors({
