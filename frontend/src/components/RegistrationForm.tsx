@@ -11,7 +11,6 @@ const RegistrationForm = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, files } = e.target;
-
     setFormData((prev) => ({
       ...prev,
       [name]: files ? files[0] : value,
@@ -23,7 +22,6 @@ const RegistrationForm = () => {
 
     console.log("User Registration Payload:", formData);
 
-    // 🔹 Create multipart/form-data
     const data = new FormData();
     data.append("name", formData.name);
     data.append("email", formData.email);
@@ -36,7 +34,12 @@ const RegistrationForm = () => {
     try {
       console.log("🚀 Sending API request...");
 
-      const response = await api.post("/register", data);
+      const response = await api.post("/api/register", data, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        timeout: 15000,
+      });
 
       console.log("✅ Server response:", response.data);
       alert("User registered successfully!");
@@ -48,35 +51,10 @@ const RegistrationForm = () => {
 
   return (
     <form onSubmit={handleSubmit}>
-      <input
-        name="name"
-        placeholder="Name"
-        required
-        onChange={handleChange}
-      />
-
-      <input
-        name="email"
-        type="email"
-        placeholder="Email"
-        required
-        onChange={handleChange}
-      />
-
-      <input
-        name="password"
-        type="password"
-        placeholder="Password"
-        required
-        onChange={handleChange}
-      />
-
-      <input
-        name="cv"
-        type="file"
-        onChange={handleChange}
-      />
-
+      <input name="name" placeholder="Name" required onChange={handleChange} />
+      <input name="email" type="email" placeholder="Email" required onChange={handleChange} />
+      <input name="password" type="password" placeholder="Password" required onChange={handleChange} />
+      <input name="cv" type="file" onChange={handleChange} />
       <button type="submit">Register</button>
     </form>
   );
