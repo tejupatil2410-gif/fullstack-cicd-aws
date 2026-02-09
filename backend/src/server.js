@@ -40,6 +40,8 @@ async function startServer() {
     })
   );
 
+  app.options("*", cors());
+
   // ======================
   // ✅ BODY PARSER
   // ======================
