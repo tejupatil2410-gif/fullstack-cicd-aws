@@ -11,22 +11,30 @@ async function startServer() {
   const app = express();
 
   // ======================
-  // ✅ CORS CONFIG
+  // ✅ CORS CONFIG (FINAL)
   // ======================
   const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:4173",
-  "http://fullstack-cicd-frontend-prod.s3-website-us-east-1.amazonaws.com",
-];
+    "http://localhost:5173",
+    "http://localhost:4173",
+    "http://fullstack-cicd-frontend-prod.s3-website-us-east-1.amazonaws.com",
+  ];
 
   app.use(
     cors({
       origin: function (origin, callback) {
-        if (!origin) return callback(null, true);
+        // Allow requests with no origin (curl, server-to-server, preflight)
+        if (!origin) {
+          return callback(null, true);
+        }
+
+        // Allow only known origins
         if (allowedOrigins.includes(origin)) {
           return callback(null, true);
         }
-        return callback(new Error("Not allowed by CORS"));
+
+        // ❌ IMPORTANT: do NOT throw error
+        // Just reject silently
+        return callback(null, false);
       },
       credentials: true,
     })
@@ -45,7 +53,7 @@ async function startServer() {
   });
 
   // ======================
-  // ✅ S3 CLIENT (⬅️ THIS IS THE PART YOU ASKED ABOUT)
+  // ✅ S3 CLIENT
   // ======================
   const s3 = new S3Client({
     region: process.env.AWS_REGION,
@@ -68,7 +76,7 @@ async function startServer() {
   });
 
   // ======================
-  // ✅ REGISTER API (UPLOAD CV TO S3)
+  // ✅ REGISTER API
   // ======================
   app.post("/api/register", upload.single("cv"), async (req, res) => {
     try {
@@ -79,10 +87,8 @@ async function startServer() {
         return res.status(400).json({ message: "Missing required fields" });
       }
 
-      // 🔹 Unique file key
       const fileKey = `cvs/${Date.now()}-${file.originalname}`;
 
-      // 🔹 Upload to S3
       await s3.send(
         new PutObjectCommand({
           Bucket: "user-cv-uploads-tejaswi",
@@ -93,7 +99,6 @@ async function startServer() {
       );
 
       const fileUrl = `https://user-cv-uploads-tejaswi.s3.amazonaws.com/${fileKey}`;
-
       console.log("✅ CV uploaded to S3:", fileUrl);
 
       return res.status(201).json({
