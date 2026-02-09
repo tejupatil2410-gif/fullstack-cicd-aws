@@ -11,7 +11,7 @@ async function startServer() {
   const app = express();
 
   // ======================
-  // ✅ CORS CONFIG (FINAL)
+  // ✅ CORS CONFIG (EXPRESS v5 SAFE)
   // ======================
   const allowedOrigins = [
     "http://localhost:5173",
@@ -21,26 +21,24 @@ async function startServer() {
 
   app.use(
     cors({
-      origin: function (origin, callback) {
-        // Allow requests with no origin (curl, server-to-server, preflight)
-        if (!origin) {
-          return callback(null, true);
-        }
+      origin: (origin, callback) => {
+        // Allow server-to-server, curl, health checks
+        if (!origin) return callback(null, true);
 
-        // Allow only known origins
         if (allowedOrigins.includes(origin)) {
           return callback(null, true);
         }
 
-        // ❌ IMPORTANT: do NOT throw error
-        // Just reject silently
+        // Reject unknown origins WITHOUT throwing error
         return callback(null, false);
       },
+      methods: ["GET", "POST", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization"],
       credentials: true,
+      optionsSuccessStatus: 204, // important for legacy browsers
     })
   );
-  app.options("/api/*", cors());
-  
+
   // ======================
   // ✅ BODY PARSER
   // ======================
