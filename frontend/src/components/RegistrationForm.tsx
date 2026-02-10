@@ -1,16 +1,16 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import api from "../api/axios";
 import type { RegisterUser } from "../types/user";
 
 const RegistrationForm = () => {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   const [formData, setFormData] = useState<RegisterUser>({
     name: "",
     email: "",
     password: "",
     cv: undefined,
   });
-
-  const [loading, setLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, files } = e.target;
@@ -21,11 +21,8 @@ const RegistrationForm = () => {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return;
-
-    console.log("User Registration Payload:", formData);
 
     const data = new FormData();
     data.append("name", formData.name);
@@ -37,20 +34,17 @@ const RegistrationForm = () => {
     }
 
     try {
-      setLoading(true);
       console.log("🚀 Sending API request...");
 
       const response = await api.post("/api/register", data, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        timeout: 15000,
+        timeout: 20000,
+        // ❌ DO NOT set Content-Type
       });
 
       console.log("✅ Server response:", response.data);
       alert("User registered successfully!");
 
-      // ✅ Reset form after success
+      // ✅ RESET FORM STATE
       setFormData({
         name: "",
         email: "",
@@ -58,12 +52,14 @@ const RegistrationForm = () => {
         cv: undefined,
       });
 
-      (e.target as HTMLFormElement).reset();
+      // ✅ RESET FILE INPUT (CRITICAL)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
     } catch (error) {
       console.error("❌ Registration failed:", error);
       alert("Registration failed. Check console.");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -73,6 +69,7 @@ const RegistrationForm = () => {
         name="name"
         placeholder="Name"
         required
+        value={formData.name}
         onChange={handleChange}
       />
 
@@ -81,6 +78,7 @@ const RegistrationForm = () => {
         type="email"
         placeholder="Email"
         required
+        value={formData.email}
         onChange={handleChange}
       />
 
@@ -89,19 +87,19 @@ const RegistrationForm = () => {
         type="password"
         placeholder="Password"
         required
+        value={formData.password}
         onChange={handleChange}
       />
 
       <input
         name="cv"
         type="file"
-        required
+        ref={fileInputRef}
         onChange={handleChange}
+        required
       />
 
-      <button type="submit" disabled={loading}>
-        {loading ? "Submitting..." : "Register"}
-      </button>
+      <button type="submit">Register</button>
     </form>
   );
 };
