@@ -3,32 +3,28 @@ const cors = require("cors");
 const multer = require("multer");
 const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const { loadEnv } = require("./config/env");
-const { initDB } = require("./db"); // ✅ DB connection
+const { initDB } = require("./db");
 
 async function startServer() {
-  // 🔐 Load secrets FIRST (SSM / env vars)
+  // ======================
+  // 🔐 LOAD ENV (SSM)
+  // ======================
   await loadEnv();
-  const db = initDB(); // 2️⃣ THEN connect to DB
-  
+
+  // ======================
+  // 🗄️ INIT DB (ONCE)
+  // ======================
+  const pool = initDB();
+
   console.log("DB_HOST =", process.env.DB_HOST);
   console.log("DB_USER =", process.env.DB_USER);
   console.log("DB_NAME =", process.env.DB_NAME);
   console.log("DB_PORT =", process.env.DB_PORT);
 
-
-  // ✅ NOW test DB (env vars are available)
-try {
-  await pool.query("SELECT 1");
-  console.log("✅ PostgreSQL connected");
-} catch (err) {
-  console.error("❌ PostgreSQL connection failed", err);
-  process.exit(1); // safe to exit here
-}
-
   const app = express();
 
   // ======================
-  // ✅ CORS CONFIG (STABLE)
+  // ✅ CORS CONFIG
   // ======================
   const allowedOrigins = [
     "http://localhost:5173",
@@ -41,7 +37,7 @@ try {
       origin: (origin, callback) => {
         if (!origin) return callback(null, true);
         if (allowedOrigins.includes(origin)) return callback(null, true);
-        return callback(null, false);
+        return callback(new Error("Not allowed by CORS"));
       },
       methods: ["GET", "POST", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],
@@ -56,7 +52,7 @@ try {
   app.use(express.json());
 
   // ======================
-  // ✅ MULTER (FILE UPLOAD)
+  // ✅ MULTER (MEMORY)
   // ======================
   const upload = multer({
     storage: multer.memoryStorage(),
@@ -86,7 +82,7 @@ try {
   });
 
   // ======================
-  // ✅ REGISTER API (S3 + RDS)
+  // ✅ REGISTER API
   // ======================
   app.post("/api/register", upload.single("cv"), async (req, res) => {
     try {
@@ -97,7 +93,7 @@ try {
         return res.status(400).json({ message: "Missing required fields" });
       }
 
-      // 🔹 Upload CV to S3
+      // 📤 Upload CV to S3
       const fileKey = `cvs/${Date.now()}-${file.originalname}`;
 
       await s3.send(
@@ -110,9 +106,9 @@ try {
       );
 
       const fileUrl = `https://user-cv-uploads-tejaswi.s3.amazonaws.com/${fileKey}`;
-      console.log("✅ CV uploaded to S3:", fileUrl);
+      console.log("✅ CV uploaded:", fileUrl);
 
-      // 🔹 Insert user into PostgreSQL
+      // 🗄️ Insert user into DB
       await pool.query(
         `INSERT INTO users (name, email, password, cv_url)
          VALUES ($1, $2, $3, $4)`,

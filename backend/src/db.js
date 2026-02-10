@@ -3,7 +3,8 @@ const { Pool } = require("pg");
 let pool;
 
 /**
- * Initialize DB connection AFTER env vars are loaded
+ * Initialize PostgreSQL connection pool
+ * Called once after env vars are loaded
  */
 function initDB() {
   if (pool) return pool;
@@ -19,7 +20,8 @@ function initDB() {
     },
   });
 
-  pool.query("SELECT 1")
+  pool
+    .query("SELECT 1")
     .then(() => console.log("✅ PostgreSQL connected"))
     .catch((err) => {
       console.error("❌ PostgreSQL connection failed", err);
