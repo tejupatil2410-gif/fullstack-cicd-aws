@@ -3,6 +3,7 @@ const cors = require("cors");
 const multer = require("multer");
 const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const { loadEnv } = require("./config/env");
+const pool = require("./config/db"); // ✅ DB connection
 
 async function startServer() {
   // 🔐 Load secrets FIRST (SSM / env vars)
@@ -11,7 +12,7 @@ async function startServer() {
   const app = express();
 
   // ======================
-  // ✅ CORS CONFIG (EXPRESS v5 SAFE)
+  // ✅ CORS CONFIG (STABLE)
   // ======================
   const allowedOrigins = [
     "http://localhost:5173",
@@ -22,20 +23,14 @@ async function startServer() {
   app.use(
     cors({
       origin: (origin, callback) => {
-        // Allow server-to-server, curl, health checks
         if (!origin) return callback(null, true);
-
-        if (allowedOrigins.includes(origin)) {
-          return callback(null, true);
-        }
-
-        // Reject unknown origins WITHOUT throwing error
+        if (allowedOrigins.includes(origin)) return callback(null, true);
         return callback(null, false);
       },
       methods: ["GET", "POST", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],
       credentials: true,
-      optionsSuccessStatus: 204, // important for legacy browsers
+      optionsSuccessStatus: 204,
     })
   );
 
@@ -75,7 +70,7 @@ async function startServer() {
   });
 
   // ======================
-  // ✅ REGISTER API
+  // ✅ REGISTER API (S3 + RDS)
   // ======================
   app.post("/api/register", upload.single("cv"), async (req, res) => {
     try {
@@ -86,6 +81,7 @@ async function startServer() {
         return res.status(400).json({ message: "Missing required fields" });
       }
 
+      // 🔹 Upload CV to S3
       const fileKey = `cvs/${Date.now()}-${file.originalname}`;
 
       await s3.send(
@@ -99,6 +95,13 @@ async function startServer() {
 
       const fileUrl = `https://user-cv-uploads-tejaswi.s3.amazonaws.com/${fileKey}`;
       console.log("✅ CV uploaded to S3:", fileUrl);
+
+      // 🔹 Insert user into PostgreSQL
+      await pool.query(
+        `INSERT INTO users (name, email, password, cv_url)
+         VALUES ($1, $2, $3, $4)`,
+        [name, email, password, fileUrl]
+      );
 
       return res.status(201).json({
         message: "User registered successfully",
