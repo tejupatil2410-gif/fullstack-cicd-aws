@@ -9,6 +9,15 @@ async function startServer() {
   // 🔐 Load secrets FIRST (SSM / env vars)
   await loadEnv();
 
+  // ✅ NOW test DB (env vars are available)
+try {
+  await pool.query("SELECT 1");
+  console.log("✅ PostgreSQL connected");
+} catch (err) {
+  console.error("❌ PostgreSQL connection failed", err);
+  process.exit(1); // safe to exit here
+}
+
   const app = express();
 
   // ======================
