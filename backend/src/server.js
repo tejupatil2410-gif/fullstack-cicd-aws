@@ -9,6 +9,12 @@ async function startServer() {
   // 🔐 Load secrets FIRST (SSM / env vars)
   await loadEnv();
 
+  console.log("DB_HOST =", process.env.DB_HOST);
+  console.log("DB_USER =", process.env.DB_USER);
+  console.log("DB_NAME =", process.env.DB_NAME);
+  console.log("DB_PORT =", process.env.DB_PORT);
+
+
   // ✅ NOW test DB (env vars are available)
 try {
   await pool.query("SELECT 1");
