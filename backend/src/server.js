@@ -3,7 +3,7 @@ const cors = require("cors");
 const multer = require("multer");
 const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const { loadEnv } = require("./config/env");
-const pool = require("./config/db"); // ✅ DB connection
+const pool = require("./db"); // ✅ DB connection
 
 async function startServer() {
   // 🔐 Load secrets FIRST (SSM / env vars)
