@@ -61,6 +61,7 @@ Trigger
 Automatically runs on every push to the main branch.
 
 Pipeline Stages
+
 1️⃣ Source Checkout
 
 Pull latest code from repository.
@@ -172,8 +173,6 @@ Zero manual deployment process
 Monitoring and logging integration
 
 Production-style backend process management
-
-
 
 👨‍💻 Author
 
